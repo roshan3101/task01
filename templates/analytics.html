@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendation System Analytics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Recommendation System Analytics</h1>
+            <a href="{{ url_for('index') }}" class="back-button">Back to Users</a>
+        </header>
+
+        <section class="metrics-section">
+            <h2>System Metrics</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>Total Users</h3>
+                    <p class="metric-value">{{ total_users }}</p>
+                </div>
+                <div class="metric-card">
+                    <h3>Total Products</h3>
+                    <p class="metric-value">{{ total_products }}</p>
+                </div>
+                <div class="metric-card">
+                    <h3>Total Interactions</h3>
+                    <p class="metric-value">{{ total_interactions }}</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="popular-products-section">
+            <h2>Most Popular Products</h2>
+            <div class="product-grid">
+                {% for product in top_products %}
+                <div class="product-card">
+                    <h3>{{ product.title }}</h3>
+                    <p class="category">{{ product.category }}</p>
+                    <p class="popularity">Likes: {{ product.likes }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add any analytics-specific JavaScript here
+        });
+    </script>
+</body>
+</html> 

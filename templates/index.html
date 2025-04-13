@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Recommender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Welcome to Smart Product Recommender</h1>
+            <a href="{{ url_for('analytics') }}" class="analytics-button">View Analytics</a>
+        </header>
+        
+        <section class="intro-section">
+            <h2>Personalized Recommendations for You</h2>
+            <p>Our system uses advanced algorithms to recommend products based on your preferences and interactions:</p>
+            <ul class="feature-list">
+                <li><strong>Hybrid Recommendations</strong> - Combines multiple algorithms for the best suggestions</li>
+                <li><strong>Collaborative Filtering</strong> - Based on similar users' preferences</li>
+                <li><strong>Content-Based Filtering</strong> - Matches products to your interests</li>
+                <li><strong>Real-time Updates</strong> - Recommendations improve as you interact</li>
+            </ul>
+        </section>
+        
+        <div class="user-selection">
+            <h2>Select a User</h2>
+            <div class="user-list">
+                {% for user in users %}
+                <a href="{{ url_for('recommendations', user_id=user) }}" class="user-card">
+                    <div class="user-info">
+                        <h3>{{ user }}</h3>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

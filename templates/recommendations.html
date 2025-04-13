@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendations for {{ user_id }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Recommendations for {{ user_id }}</h1>
+            <div class="header-buttons">
+                <a href="{{ url_for('analytics') }}" class="analytics-button">View Analytics</a>
+                <a href="{{ url_for('index') }}" class="back-button">Back to Users</a>
+            </div>
+        </header>
+
+        <section class="recommendation-controls">
+            <h2>Recommendation Approach</h2>
+            <div class="approach-buttons">
+                <button class="approach-button active" data-approach="hybrid">Hybrid</button>
+                <button class="approach-button" data-approach="collaborative">Collaborative Filtering</button>
+                <button class="approach-button" data-approach="content">Content-Based</button>
+                <button class="approach-button" data-approach="basic">Basic</button>
+            </div>
+        </section>
+
+        <section class="recommended-section">
+            <h2>Recommended Products</h2>
+            <div class="product-grid" id="recommended-products-container">
+                {% for product in recommended_products %}
+                <div class="product-card">
+                    <h3>{{ product.title }}</h3>
+                    <p class="category">{{ product.category }}</p>
+                    <p class="tags">Tags: {{ product.tags }}</p>
+                    <p class="popularity">Popularity: {{ product.popularity_score }}</p>
+                    <button class="like-button {% if product.product_id in user_likes %}liked{% endif %}" 
+                            data-product-id="{{ product.product_id }}"
+                            {% if product.product_id in user_likes %}disabled{% endif %}>
+                        {% if product.product_id in user_likes %}Liked!{% else %}Like{% endif %}
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="category-section">
+            <h2>Products in Your Preferred Category</h2>
+            <div class="product-grid">
+                {% for product in category_products %}
+                <div class="product-card">
+                    <h3>{{ product.title }}</h3>
+                    <p class="category">{{ product.category }}</p>
+                    <p class="tags">Tags: {{ product.tags }}</p>
+                    <p class="popularity">Popularity: {{ product.popularity_score }}</p>
+                    <button class="like-button {% if product.product_id in user_likes %}liked{% endif %}" 
+                            data-product-id="{{ product.product_id }}"
+                            {% if product.product_id in user_likes %}disabled{% endif %}>
+                        {% if product.product_id in user_likes %}Liked!{% else %}Like{% endif %}
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="other-section">
+            <h2>Other Products</h2>
+            <div class="product-grid">
+                {% for product in other_products %}
+                <div class="product-card">
+                    <h3>{{ product.title }}</h3>
+                    <p class="category">{{ product.category }}</p>
+                    <p class="tags">Tags: {{ product.tags }}</p>
+                    <p class="popularity">Popularity: {{ product.popularity_score }}</p>
+                    <button class="like-button {% if product.product_id in user_likes %}liked{% endif %}" 
+                            data-product-id="{{ product.product_id }}"
+                            {% if product.product_id in user_likes %}disabled{% endif %}>
+                        {% if product.product_id in user_likes %}Liked!{% else %}Like{% endif %}
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const likeButtons = document.querySelectorAll('.like-button');
+            const userId = '{{ user_id }}';
+            const approachButtons = document.querySelectorAll('.approach-button');
+            const recommendedContainer = document.getElementById('recommended-products-container');
+
+            // Function to create product card HTML
+            function createProductCard(product, userLikes) {
+                const isLiked = userLikes.includes(product.product_id);
+                return `
+                    <div class="product-card">
+                        <h3>${product.title}</h3>
+                        <p class="category">${product.category}</p>
+                        <p class="tags">Tags: ${product.tags}</p>
+                        <p class="popularity">Popularity: ${product.popularity_score}</p>
+                        <button class="like-button ${isLiked ? 'liked' : ''}" 
+                                data-product-id="${product.product_id}"
+                                ${isLiked ? 'disabled' : ''}>
+                            ${isLiked ? 'Liked!' : 'Like'}
+                        </button>
+                    </div>
+                `;
+            }
+
+            // Function to update recommendations
+            function updateRecommendations(products, userLikes) {
+                // Clear current recommendations
+                recommendedContainer.innerHTML = '';
+                
+                // Add new recommendations
+                products.forEach(product => {
+                    recommendedContainer.innerHTML += createProductCard(product, userLikes);
+                });
+                
+                // Reattach event listeners to new buttons
+                attachLikeButtonListeners();
+            }
+
+            // Function to attach event listeners to like buttons
+            function attachLikeButtonListeners() {
+                const allLikeButtons = document.querySelectorAll('.like-button:not([disabled])');
+                allLikeButtons.forEach(button => {
+                    button.addEventListener('click', handleLikeClick);
+                });
+            }
+
+            // Function to handle like button click
+            function handleLikeClick() {
+                const productId = this.dataset.productId;
+                
+                fetch('/like_product', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        product_id: productId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Mark the current product as liked
+                        this.textContent = 'Liked!';
+                        this.disabled = true;
+                        this.classList.add('liked');
+                        
+                        // Update recommendations with new data
+                        updateRecommendations(data.recommendations, [...document.querySelectorAll('.liked').map(btn => btn.dataset.productId)]);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+
+            // Function to handle approach button click
+            function handleApproachClick() {
+                const approach = this.dataset.approach;
+                
+                // Update active button
+                approachButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Fetch recommendations for the selected approach
+                fetch(`/recommendations/${userId}/${approach}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update recommendations with new data
+                        updateRecommendations(data.recommendations, data.user_likes);
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+
+            // Initial setup of event listeners
+            likeButtons.forEach(button => {
+                if (!button.disabled) {
+                    button.addEventListener('click', handleLikeClick);
+                }
+            });
+            
+            // Setup approach button listeners
+            approachButtons.forEach(button => {
+                button.addEventListener('click', handleApproachClick);
+            });
+        });
+    </script>
+</body>
+</html> 
