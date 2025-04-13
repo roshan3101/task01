@@ -87,22 +87,91 @@ python app.py
 5. Try different recommendation approaches using the buttons
 6. View system analytics via the "Analytics" button
 
-## Performance and Scalability
-- Pre-computed similarity matrices for efficient recommendations
-- Caching strategies for frequently accessed data
-- Modular design for easy addition of new recommendation algorithms
-- JSON serialization for durable storage of user interactions
 
-## Future Enhancements
-- User authentication and account management
-- Advanced recommendation algorithms (matrix factorization, deep learning)
-- A/B testing framework for algorithm optimization
-- Product image processing for visual similarity recommendations
-- Time-based decay for older interactions
+## Content Filtering Logic
 
-## Business Value
-- **Increased Conversion Rates**: More relevant recommendations lead to higher purchase rates
-- **Enhanced User Engagement**: Users spend more time exploring recommended products
-- **Improved Customer Satisfaction**: Personalized experience tailored to individual preferences
-- **Data-Driven Insights**: Gain valuable understanding of customer preferences and trends
-- **Competitive Advantage**: Stay ahead with cutting-edge recommendation technology 
+Our content-based filtering analyzes product attributes using TF-IDF vectorization:
+
+1. **Feature Extraction**: Product features (category and tags) are combined into a single content feature:
+   ```python
+   self.products['content_features'] = self.products['category'] + ' ' + self.products['tags']
+   ```
+
+2. **TF-IDF Vectorization**: Text features are converted to numerical vectors that capture term importance:
+   ```python
+   self.tfidf = TfidfVectorizer(stop_words='english')
+   self.tfidf_matrix = self.tfidf.fit_transform(self.products['content_features'])
+   ```
+
+3. **Similarity Calculation**: A product similarity matrix is pre-computed using cosine similarity:
+   ```python
+   self.product_similarity = cosine_similarity(self.tfidf_matrix)
+   ```
+
+4. **Recommendation Generation**: When a user has liked products, we average the similarity scores from those products to find new recommendations:
+   ```python
+   similarity_scores = np.zeros(len(self.products))
+   for idx in product_indices:  # indices of products the user liked
+       similarity_scores += self.product_similarity[idx]
+   similarity_scores = similarity_scores / len(product_indices)
+   ```
+
+## Collaborative Filtering Simulation
+
+Our collaborative filtering identifies similar users and their preferences:
+
+1. **User-Product Interaction Matrix**: We build a binary matrix where rows represent users and columns represent products:
+   ```python
+   interaction_matrix = np.zeros((len(all_users), len(all_products)))
+   for i, user in enumerate(all_users):
+       for j, product in enumerate(all_products):
+           if product in self.interactions[user]:
+               interaction_matrix[i, j] = 1
+   ```
+
+2. **User Similarity**: We calculate similarity between users based on both:
+   - **Product interactions** (70% weight): Using cosine similarity between interaction vectors
+   - **Interest tags** (30% weight): Using Jaccard similarity on user interests
+   ```python
+   combined_similarity = 0.7 * product_similarity + 0.3 * np.array(interest_similarity)
+   ```
+
+3. **Weighted Recommendations**: Products are scored based on similar users' preferences, weighted by similarity:
+   ```python
+   for similar_user_id in similar_users:
+       similarity_weight = combined_similarity[user_idx]
+       for product in self.interactions[similar_user_id]:
+           recommended_products[product] += similarity_weight
+   ```
+
+## User Profile Storage and Updates
+
+User profiles are stored and updated through interaction tracking:
+
+1. **Data Structure**: User interactions are stored in a dictionary mapping users to sets of liked product IDs:
+   ```python
+   self.interactions = {
+       'user123': {101, 204, 356},  # Product IDs user 123 has liked
+       'user456': {102, 204, 415}   # Product IDs user 456 has liked
+   }
+   ```
+
+2. **Persistence**: Interactions are serialized to JSON for persistent storage:
+   ```python
+   def _save_interactions(self):
+       # Convert sets to lists for JSON serialization
+       serializable_interactions = {user_id: list(products) for user_id, products in self.interactions.items()}
+       with open(Config.INTERACTIONS_FILE, 'w') as f:
+           json.dump(serializable_interactions, f)
+   ```
+
+3. **Profile Updates**: When a user likes a product, their profile is immediately updated:
+   ```python
+   def add_interaction(self, user_id, product_id):
+       if user_id not in self.interactions:
+           self.interactions[user_id] = set()
+       self.interactions[user_id].add(product_id)
+       self._save_interactions()
+   ```
+
+4. **Preference Extraction**: User preferences are derived from both explicit data (CSV) and implicit interaction history. 
